@@ -934,11 +934,42 @@ function loadStatusConfig() {
 }
 
 // ==================== BOT CONTROL ====================
+
+// Check if Node.js is installed
+async function checkNodeInstalled() {
+    try {
+        const version = await invoke('check_node_installed');
+        return { installed: true, version };
+    } catch (e) {
+        return { installed: false, error: e };
+    }
+}
+
+// Install bot dependencies
+async function installBotDependencies() {
+    try {
+        showToast('Installing dependencies... This may take a minute.', 'info');
+        const result = await invoke('install_bot_dependencies');
+        showToast('Dependencies installed!', 'success');
+        return true;
+    } catch (e) {
+        showToast('Failed to install dependencies: ' + e, 'error');
+        return false;
+    }
+}
+
 async function startBot() {
     try {
+        // First check if Node.js is installed
+        const nodeCheck = await checkNodeInstalled();
+        if (!nodeCheck.installed) {
+            showToast('Node.js is not installed! Please install from nodejs.org', 'error');
+            return;
+        }
+        
         showToast('Starting bot...', 'info');
         
-        // Cleanup alte Prozesse bevor neuer Start
+        // Cleanup old processes before starting
         try {
             await invoke('force_cleanup_bot');
         } catch (e) {}
@@ -949,7 +980,17 @@ async function startBot() {
         await updateHostingStats();
         setTimeout(loadDashboard, 2000);
     } catch (e) {
-        showToast('Error: ' + e, 'error');
+        // Check if it's a missing dependencies error
+        if (e.includes && (e.includes('Cannot find module') || e.includes('MODULE_NOT_FOUND'))) {
+            showToast('Installing missing dependencies...', 'info');
+            const installed = await installBotDependencies();
+            if (installed) {
+                // Try starting again
+                setTimeout(startBot, 1000);
+            }
+        } else {
+            showToast('Error: ' + e, 'error');
+        }
     }
 }
 

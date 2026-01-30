@@ -86,28 +86,8 @@ fn get_app_data_dir() -> PathBuf {
 }
 
 fn get_project_dir() -> PathBuf {
-    // Versuche verschiedene Pfade für Bot-Code
-    let possible_paths = [
-        std::env::current_exe()
-            .ok()
-            .and_then(|p| p.parent().map(|p| p.to_path_buf()))
-            .unwrap_or_default(),
-        std::env::current_exe()
-            .ok()
-            .and_then(|p| p.parent().map(|p| p.join("..").join("..").join("..")))
-            .unwrap_or_default(),
-        PathBuf::from(r"C:\Users\110ha\Desktop\Nexus-discord-tool"),
-    ];
-    
-    for path in &possible_paths {
-        let bot_dir = path.join("bot");
-        if bot_dir.exists() {
-            return path.clone();
-        }
-    }
-    
-    // Fallback
-    PathBuf::from(r"C:\Users\110ha\Desktop\Nexus-discord-tool")
+    // Use app data directory for bot files
+    get_app_data_dir()
 }
 
 fn get_config_path() -> PathBuf {
@@ -117,6 +97,135 @@ fn get_config_path() -> PathBuf {
 
 fn get_bot_dir() -> PathBuf {
     get_project_dir().join("bot")
+}
+
+// Initialize bot files from resources
+fn initialize_bot_files(app_handle: &tauri::AppHandle) -> Result<(), String> {
+    let bot_dir = get_bot_dir();
+    let index_file = bot_dir.join("index.js");
+    
+    // If bot files already exist, skip
+    if index_file.exists() {
+        return Ok(());
+    }
+    
+    // Create bot directory
+    fs::create_dir_all(&bot_dir).map_err(|e| format!("Failed to create bot directory: {}", e))?;
+    
+    // Try to copy from resource path
+    if let Ok(resource_path) = app_handle.path().resource_dir() {
+        let source_bot_dir = resource_path.join("bot");
+        if source_bot_dir.exists() {
+            copy_dir_recursive(&source_bot_dir, &bot_dir)
+                .map_err(|e| format!("Failed to copy bot files: {}", e))?;
+            return Ok(());
+        }
+    }
+    
+    // Fallback: Check next to executable
+    if let Ok(exe_path) = std::env::current_exe() {
+        if let Some(exe_dir) = exe_path.parent() {
+            // Check various possible locations
+            let possible_sources = [
+                exe_dir.join("bot"),
+                exe_dir.join("_up_").join("bot"),
+                exe_dir.join("..").join("bot"),
+                exe_dir.join("..").join("..").join("bot"),
+                exe_dir.join("..").join("Resources").join("bot"), // macOS
+            ];
+            
+            for source in &possible_sources {
+                if source.exists() && source.join("index.js").exists() {
+                    copy_dir_recursive(source, &bot_dir)
+                        .map_err(|e| format!("Failed to copy bot files: {}", e))?;
+                    return Ok(());
+                }
+            }
+        }
+    }
+    
+    Err("Bot files not found. Please reinstall the application.".to_string())
+}
+
+// Recursively copy directory
+fn copy_dir_recursive(src: &PathBuf, dst: &PathBuf) -> std::io::Result<()> {
+    if !dst.exists() {
+        fs::create_dir_all(dst)?;
+    }
+    
+    for entry in fs::read_dir(src)? {
+        let entry = entry?;
+        let path = entry.path();
+        let dest_path = dst.join(entry.file_name());
+        
+        if path.is_dir() {
+            // Skip node_modules - will be installed fresh
+            if entry.file_name() == "node_modules" {
+                continue;
+            }
+            copy_dir_recursive(&path, &dest_path)?;
+        } else {
+            // Skip config.json - user will configure
+            if entry.file_name() == "config.json" {
+                continue;
+            }
+            fs::copy(&path, &dest_path)?;
+        }
+    }
+    
+    Ok(())
+}
+
+// Check if Node.js is installed
+#[tauri::command]
+fn check_node_installed() -> Result<String, String> {
+    let output = Command::new("node")
+        .arg("--version")
+        .output();
+    
+    match output {
+        Ok(out) => {
+            if out.status.success() {
+                let version = String::from_utf8_lossy(&out.stdout).trim().to_string();
+                Ok(version)
+            } else {
+                Err("Node.js not found".to_string())
+            }
+        }
+        Err(_) => Err("Node.js not installed. Please install Node.js from https://nodejs.org".to_string())
+    }
+}
+
+// Install bot dependencies
+#[tauri::command]
+async fn install_bot_dependencies() -> Result<String, String> {
+    let bot_dir = get_bot_dir();
+    
+    if !bot_dir.join("package.json").exists() {
+        return Err("Bot files not found".to_string());
+    }
+    
+    #[cfg(windows)]
+    let output = Command::new("cmd")
+        .args(["/C", "npm", "install"])
+        .current_dir(&bot_dir)
+        .creation_flags(CREATE_NO_WINDOW)
+        .output()
+        .map_err(|e| format!("Failed to run npm install: {}", e))?;
+    
+    #[cfg(not(windows))]
+    let output = Command::new("npm")
+        .arg("install")
+        .current_dir(&bot_dir)
+        .output()
+        .map_err(|e| format!("Failed to run npm install: {}", e))?;
+    
+    if output.status.success() {
+        Ok("Dependencies installed successfully".to_string())
+    } else {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        Err(format!("npm install failed: {}", stderr))
+    }
 }
 
 // Konfiguration speichern
@@ -131,7 +240,7 @@ fn save_config(config: BotConfig) -> Result<String, String> {
     let json = serde_json::to_string_pretty(&config).map_err(|e| e.to_string())?;
     fs::write(&config_path, json).map_err(|e| e.to_string())?;
     
-    Ok("Konfiguration gespeichert".to_string())
+    Ok("Configuration saved".to_string())
 }
 
 // Konfiguration laden
@@ -822,9 +931,9 @@ fn main() {
         .manage(BotStartTime(Mutex::new(None)))
         .manage(RichPresenceActive(AtomicBool::new(true)))
         .setup(|app| {
-            // System Tray erstellen
-            let show_item = MenuItem::with_id(app, "show", "Öffnen", true, None::<&str>)?;
-            let quit_item = MenuItem::with_id(app, "quit", "Beenden", true, None::<&str>)?;
+            // Create System Tray
+            let show_item = MenuItem::with_id(app, "show", "Open", true, None::<&str>)?;
+            let quit_item = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&show_item, &quit_item])?;
             
             // Tray Icon laden
@@ -863,7 +972,7 @@ fn main() {
                     }
                 })
                 .on_tray_icon_event(|tray, event| {
-                    // Doppelklick oder Linksklick öffnet das Fenster
+                    // Double click or left click opens window
                     if let TrayIconEvent::Click { button: MouseButton::Left, button_state: MouseButtonState::Up, .. } = event {
                         if let Some(window) = tray.app_handle().get_webview_window("main") {
                             let _ = window.show();
@@ -872,6 +981,12 @@ fn main() {
                     }
                 })
                 .build(app)?;
+            
+            // Initialize bot files from resources
+            let app_handle = app.handle().clone();
+            if let Err(e) = initialize_bot_files(&app_handle) {
+                eprintln!("Warning: Could not initialize bot files: {}", e);
+            }
             
             Ok(())
         })
@@ -897,10 +1012,12 @@ fn main() {
             switch_bot_server,
             send_bot_control,
             execute_quick_action,
-            minimize_window
+            minimize_window,
+            check_node_installed,
+            install_bot_dependencies
         ])
         .on_window_event(|window, event| {
-            // Bot beenden wenn App geschlossen wird
+            // Stop bot when app is closed
             if let tauri::WindowEvent::CloseRequested { .. } = event {
                 if let Some(state) = window.try_state::<BotProcess>() {
                     let mut process = state.0.lock().unwrap();
