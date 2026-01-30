@@ -1,0 +1,67 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Nexus Discord Tool",
+  "version": "1.0.0",
+  "identifier": "com.nexus.discord-tool",
+  "build": {
+    "frontendDist": "../src"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "title": "Nexus Discord Tool",
+        "width": 1000,
+        "height": 700,
+        "minWidth": 800,
+        "minHeight": 600,
+        "resizable": true,
+        "center": true,
+        "decorations": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "publisher": "Nexus+",
+    "copyright": "© 2026 Nexus+",
+    "category": "Utility",
+    "shortDescription": "Discord Bot Management Tool",
+    "longDescription": "Nexus Discord Tool - Ein umfassendes Tool zur Verwaltung deines Discord Bots mit Dashboard, Embed Builder, Einstellungen und mehr.",
+    "windows": {
+      "wix": {
+        "language": "de-DE"
+      },
+      "nsis": {
+        "installMode": "currentUser",
+        "displayLanguageSelector": true,
+        "languages": ["German", "English"]
+      }
+    },
+    "macOS": {
+      "minimumSystemVersion": "10.13",
+      "signingIdentity": null,
+      "frameworks": [],
+      "entitlements": null
+    },
+    "linux": {
+      "appimage": {
+        "bundleMediaFramework": false
+      },
+      "deb": {
+        "depends": []
+      }
+    }
+  }
+}

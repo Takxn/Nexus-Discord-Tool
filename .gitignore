@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+bot/node_modules/
+
+# Build
+target/
+dist/
+build/
+releases/
+
+# Config mit sensiblen Daten
+bot/config.json
+src-tauri/bot/config.json
+**/config.json
+
+# Logs
+*.log
+bot/bot.log
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Tauri
+src-tauri/target/
+
+# Bot Data (sensible Daten)
+bot/data/
+
+# Temporäre Dateien
+*.tmp
+*.temp

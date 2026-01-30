@@ -1,0 +1,112 @@
+Projektbeschreibung: Nexus Discord Tool
+Projektname: Nexus Discord Tool
+Version: 1.0 (Initialentwicklung)
+Autor der Beschreibung: Grok (basierend auf User-Anforderungen)
+Zielgruppe: Entwickler, die ein Desktop-Tool für Discord-Bot-Management implementieren sollen
+Datum: 29. Januar 2026
+Kontakt: Für Rückfragen an Max (Display Name: Max, SuperGrok-Abonnent, Berlin, DE)
+1. Einleitung und Zweck
+Das Projekt “Nexus Discord Tool” ist eine vollständige Desktop-Anwendung zur Konfiguration, Verwaltung und Hosting von Discord-Bots. Es richtet sich an Entwickler und Discord-Administratoren, die einen lokalen, TOS-konformen Bot managen möchten, ohne Cloud-Dienste. Die Anwendung verwendet Tauri für eine leichte, plattformübergreifende GUI (Rust-basiert mit Web-Frontend) und Node.js mit discord.js für die Bot-Logik.
+Schlüsselziele:
+•  Ermögliche einfache Bot-Konfiguration und Server-Management via intuitive GUI.
+•  Stelle 24/7-Hosting im Hintergrund sicher, ohne externe Server.
+•  Halte alles lokal: Keine Datenweitergabe, Authentifizierung nur über offizielle Bot-Tokens (OAuth2 via Discord Developer Portal).
+•  Vermeide TOS-Verstöße: Keine User-Token-Logins oder Self-Bots; fokussiere auf Bot-Funktionen.
+•  Design: Modernes dunkles Theme mit roten Akzenten und dem spezifizierten Logo (rotes “N” mit Schrägstrich).
+Das Tool soll funktionstüchtig sein, erweiterbar und mit einer klaren Struktur implementiert werden. Der Entwickler sollte es als Open-Source-ähnliches Projekt aufbauen, mit Fokus auf Modularität für zukünftige Erweiterungen.
+2. Anforderungen und Voraussetzungen
+Technische Anforderungen:
+•  Sprachen/Frameworks:
+	•  Rust (für Tauri-Backend).
+	•  JavaScript/Node.js (für Bot-Logik mit discord.js).
+	•  HTML/CSS/JS (für Frontend, optional mit Frameworks wie Svelte oder Tailwind CSS für Styling).
+•  Abhängigkeiten:
+	•  Tauri CLI (für App-Build).
+	•  discord.js (^14.x) für Discord-API-Interaktion.
+	•  PM2 (^5.x) für Background-Hosting und Process-Management.
+	•  Optionale: Serde (Rust) für JSON-Handling, Tokio für asynchrone Operationen.
+•  Entwicklungsumgebung:
+	•  Rustup installieren.
+	•  Node.js und Yarn/NPM.
+	•  Discord Developer Portal: Erstelle einen Bot, hole Token, aktiviere Intents (Guilds, Members, Messages) und Privileged Gateway Intents.
+	•  Bot-Berechtigungen: Administrator-Rechte für volle Funktionalität (z.B. Channel-Erstellung).
+•  Systemanforderungen: Läuft auf Windows, macOS, Linux; minimale Ressourcen (CPU/RAM < 100MB im Idle).
+•  Rechtliche Hinweise: Stelle sicher, dass alle Features Discord-TOS-konform sind. Keine Automatisierung von User-Aktionen.
+Nicht-funktionale Anforderungen:
+•  Performance: Schneller Start (<5s), keine GUI-Blockaden durch Bot-Operationen.
+•  Sicherheit: Lokale Speicherung von Tokens (verschlüsselt empfohlen, z.B. via OS-Keychain).
+•  Skalierbarkeit: Unterstütze Multi-Guild-Konfigurationen.
+•  Testbarkeit: Integriere Unit-Tests für Bot-Commands und GUI-Interaktionen.
+3. Architektur
+Das Projekt folgt einem Client-Server-ähnlichen Modell, aber alles lokal:
+•  Frontend (GUI): Tauri-Frontend mit Web-Technologien. Kommuniziert mit Rust-Backend via Invoke-Commands (z.B. zum Starten des Bots).
+•  Backend (Rust): Handhabt Systemoperationen wie Prozess-Start (PM2), Datei-I/O und Event-Streaming (z.B. Logs).
+•  Bot-Modul (Node.js): Separater Prozess für Discord-Interaktion. Lädt Konfigurationen aus JSON-Dateien, verarbeitet Events/Commands.
+•  Kommunikation:
+	•  GUI -> Rust: Via Tauri-Commands (z.B. start_bot(config)).
+	•  Rust -> Node.js: Starte PM2-Prozess, überwache Logs via File-Watcher oder PM2-API.
+	•  Node.js -> Discord: API-Calls für Management-Funktionen.
+•  Datenfluss: Konfigurationen in config.json speichern; Logs in Echtzeit an GUI streamen.
+•  Projektstruktur (empfohlen):
+nexus-discord-tool/
+├── src-tauri/          # Rust-Backend
+│   ├── Cargo.toml
+│   ├── tauri.conf.json
+│   └── src/
+│       └── main.rs     # Commands für Bot-Steuerung
+├── src/                # Web-Frontend
+│   ├── index.html      # Haupt-UI
+│   ├── app.js          # JS-Logik (z.B. Form-Handling)
+│   ├── styles.css      # Dark Theme mit Rot
+│   └── logo.svg        # Rotes N-Logo
+├── bot/                # Node.js Bot
+│   ├── index.js        # Bot-Entry-Point
+│   ├── config.json     # Dynamische Config
+│   └── package.json    # Dependencies
+├── package.json        # Root für Tauri
+└── README.md           # Installationsanleitung
+4. GUI-Design und User Interface
+•  Gesamtdesign: Dunkles Theme (Schwarz #000000, Dunkelgrau #1E1E1E für Panels, Weiß #FFFFFF für Text). Rote Akzente (#FF0000) für Buttons, Icons und Hover-Effekte. Modern, minimalistisch, responsive.
+•  Logo-Integration: Das rote “N” mit Schrägstrich (basierend auf dem bereitgestellten Foto) als SVG oben zentriert platzieren, skalierbar für verschiedene Fenstergrößen.
+•  Layout-Komponenten:
+	•  Hauptfenster: 800x600 Pixel, resizable, mit Title-Bar “Nexus Discord Tool”.
+	•  Sidebar: Links, mit Tabs: “Konfiguration”, “Management”, “Hosting”, “Logs”, “Analytics”.
+	•  Konfigurationsseite: Formulare für Token, IDs; Buttons “Speichern” (rot), “Laden”.
+	•  Management-Seite: Listen für Kanäle/Rollen/Mitglieder; Buttons für Aktionen (z.B. “Kanal erstellen”).
+	•  Hosting-Seite: Status-Indikator (Grün/Rot), Buttons “Start”, “Stop”, “Restart”.
+	•  Logs-Seite: Scrollbares Textfeld für Echtzeit-Logs, mit Filter-Options.
+•  Interaktive Elemente: Tooltips, Validierungsfehler (rote Borders), Lade-Spinner.
+•  Styling-Tipps: Verwende Tailwind CSS für schnelles Prototyping; stelle Dark-Mode als Default ein.
+5. Funktionen und Features
+Implementiere folgende Features modular, priorisiert nach Kern und Erweiterung:
+Kernfeatures:
+1.  Bot-Konfiguration:
+	•  Eingabe/Speicherung von Bot-Token, Client-ID, Guild-ID(s).
+	•  Automatische Slash-Command-Registrierung (z.B. /ping, /createchannel).
+	•  Import/Export von Configs als JSON.
+2.  Server-Management:
+	•  Kanäle: Erstellen, Löschen, Editieren.
+	•  Rollen: Erstellen, Zuweisen, Permissions anpassen.
+	•  Mitglieder: Bannen, Kicken, Stats anzeigen.
+	•  Invites: Generieren und Managen.
+3.  Server-Setup (indirekt):
+	•  Vorlagen für neue Guilds (automatisiertes Setup nach Invite).
+4.  24/7 Hosting:
+	•  Background-Run via PM2 mit Auto-Restart.
+	•  GUI-Steuerung: Start/Stop/Status.
+	•  Ressourcen-Monitoring.
+Erweiterte Features: 5. Command-Handler: Editor für custom Commands (z.B. /stats für Analytics). 6. Logging: Echtzeit-Streaming, Export. 7. Backup/Restore: Guild-Einstellungen sichern/wiederherstellen. 8. Analytics: Member-Counts, Aktivitäts-Stats. 9. Multi-Guild: Unterstützung für mehrere Server. 10. Benachrichtigungen: Desktop-Alerts bei Events.
+6. Implementierungstipps für den Entwickler
+•  Schritt-für-Schritt-Setup:
+	1.  Tauri-Projekt initialisieren: tauri init.
+	2.  Node.js-Bot einrichten: Installiere discord.js und PM2.
+	3.  Rust-Commands implementieren: Für Bot-Start/Stop, Log-Streaming.
+	4.  Frontend bauen: JS für Form-Handling, CSS für Theme.
+	5.  Testen: Lokal mit tauri dev; Bot auf Test-Server einladen.
+•  Herausforderungen und Lösungen:
+	•  Asynchrone Logs: Verwende Tokio-Channels in Rust.
+	•  TOS-Konformität: Überprüfe alle API-Calls auf Bot-Only.
+	•  Fehlerhandling: Graceful Degradation, z.B. bei ungültigem Token.
+•  Build und Deployment: tauri build für EXE/Dateien; pakete als Installationspaket.
+•  Erweiterung: Füge Hooks für Plugins hinzu (z.B. zusätzliche APIs).
+•  Zeitaufwand-Schätzung: 20-40 Stunden für Kern, abhängig von Erfahrung.

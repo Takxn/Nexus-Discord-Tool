@@ -1,0 +1,168 @@
+{
+  "guild": {
+    "id": "1371248705486979242",
+    "name": "Nexus+",
+    "icon": "https://cdn.discordapp.com/icons/1371248705486979242/27a894e8a8c94041c2648cf042c1808c.webp?size=128",
+    "ownerId": "1063946056313880697",
+    "memberCount": 5,
+    "createdAt": 1747001567957,
+    "boostLevel": 0,
+    "boostCount": 0
+  },
+  "channels": [
+    {
+      "id": "1371248706371719311",
+      "name": "💬⎢𝐂𝐡𝐚𝐭",
+      "type": "text",
+      "position": 0
+    },
+    {
+      "id": "1371248920029823026",
+      "name": "📝⎢𝐑𝐮𝐥𝐞𝐬",
+      "type": "text",
+      "position": 1
+    },
+    {
+      "id": "1371248920029823029",
+      "name": "moderator-only",
+      "type": "text",
+      "position": 0
+    },
+    {
+      "id": "1372339624877359144",
+      "name": "🎇⎢𝐏𝐢𝐜𝐭𝐮𝐫𝐞𝐬",
+      "type": "text",
+      "position": 1
+    },
+    {
+      "id": "1372340504238493756",
+      "name": "🆙⎢𝐔𝐩𝐝𝐚𝐭𝐞𝐬",
+      "type": "other",
+      "position": 0
+    }
+  ],
+  "roles": [
+    {
+      "id": "1372341895451381861",
+      "name": "𝐀𝐝𝐦𝐢𝐧",
+      "color": "#ff0000",
+      "memberCount": 3,
+      "position": 8
+    },
+    {
+      "id": "1372342030461833268",
+      "name": "𝐌𝐨𝐝𝐞𝐫𝐚𝐭𝐨𝐫",
+      "color": "#4200ff",
+      "memberCount": 0,
+      "position": 7
+    },
+    {
+      "id": "1405610841721540683",
+      "name": "Nexus Bot+",
+      "color": "#ff0000",
+      "memberCount": 1,
+      "position": 6
+    },
+    {
+      "id": "1372342131007422515",
+      "name": "𝐁𝐨𝐭",
+      "color": "#000000",
+      "memberCount": 1,
+      "position": 5
+    },
+    {
+      "id": "1372343231379013823",
+      "name": "𝐒𝐞𝐥𝐥𝐞𝐫",
+      "color": "#ff5100",
+      "memberCount": 0,
+      "position": 4
+    },
+    {
+      "id": "1465991994030424211",
+      "name": "Nexus User",
+      "color": "#ff0000",
+      "memberCount": 1,
+      "position": 3
+    },
+    {
+      "id": "1372342711142711328",
+      "name": "𝐌𝐞𝐦𝐛𝐞𝐫",
+      "color": "#15ff00",
+      "memberCount": 2,
+      "position": 2
+    },
+    {
+      "id": "1423411866709000205",
+      "name": "Nexus Mod",
+      "color": "#ff0000",
+      "memberCount": 1,
+      "position": 1
+    }
+  ],
+  "members": [
+    {
+      "id": "1190558638067163226",
+      "username": "Nexus Bot+",
+      "displayName": "Nexus Bot+",
+      "avatar": "https://cdn.discordapp.com/avatars/1190558638067163226/0eae2d05782e89fb5527822934c8fd1d.webp?size=32",
+      "status": "online",
+      "isBot": true,
+      "joinedAt": 1755194139746
+    },
+    {
+      "id": "1423405574283858081",
+      "username": "Nexus Mod",
+      "displayName": "Nexus Mod",
+      "avatar": "https://cdn.discordapp.com/avatars/1423405574283858081/0eae2d05782e89fb5527822934c8fd1d.webp?size=32",
+      "status": "online",
+      "isBot": true,
+      "joinedAt": 1759438234804
+    },
+    {
+      "id": "1038127066362695700",
+      "username": "4pm.tk",
+      "displayName": "4pm.tk",
+      "avatar": "https://cdn.discordapp.com/avatars/1038127066362695700/27c70a2e7e0c2b649b86fcb08499bc0d.webp?size=32",
+      "status": "dnd",
+      "isBot": false,
+      "joinedAt": 1769426001285
+    },
+    {
+      "id": "1063946056313880697",
+      "username": "takxn_life",
+      "displayName": "𝐓𝐚𝐤𝐱𝐧",
+      "avatar": "https://cdn.discordapp.com/avatars/1063946056313880697/a_b6432171bf1011ee81f0f076c03a2274.gif?size=32",
+      "status": "dnd",
+      "isBot": false,
+      "joinedAt": 1747001568078
+    },
+    {
+      "id": "821496836107665438",
+      "username": "_d_i_a_z_z_",
+      "displayName": "Dr.Diaz",
+      "avatar": "https://cdn.discordapp.com/avatars/821496836107665438/b92ad52b50ada7258b2a2ada8b61e9fa.webp?size=32",
+      "status": "offline",
+      "isBot": false,
+      "joinedAt": 1769676915892
+    }
+  ],
+  "stats": {
+    "totalMembers": 5,
+    "online": 2,
+    "idle": 0,
+    "dnd": 2,
+    "offline": 1,
+    "bots": 2,
+    "humans": 3,
+    "totalChannels": 7,
+    "textChannels": 4,
+    "voiceChannels": 0,
+    "totalRoles": 8,
+    "emojis": 8
+  },
+  "bot": {
+    "uptime": 462346,
+    "ping": 167,
+    "status": "online"
+  }
+}
