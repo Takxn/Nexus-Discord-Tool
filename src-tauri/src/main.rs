@@ -6,9 +6,12 @@ use std::fs;
 use std::path::PathBuf;
 use std::process::{Child, Command, Stdio};
 use std::sync::Mutex;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::AtomicBool;
 use std::time::{SystemTime, UNIX_EPOCH};
-use tauri::State;
+use tauri::{State, Manager};
+use tauri::tray::{TrayIconBuilder, MouseButton, MouseButtonState, TrayIconEvent};
+use tauri::menu::{Menu, MenuItem};
+use tauri::image::Image;
 use discord_rich_presence::{activity, DiscordIpc, DiscordIpcClient};
 
 #[cfg(windows)]
@@ -29,6 +32,7 @@ struct BotProcess(Mutex<Option<Child>>);
 struct BotStartTime(Mutex<Option<u64>>);
 
 // Rich Presence State
+#[allow(dead_code)]
 struct RichPresenceActive(AtomicBool);
 
 // App Start Time für Rich Presence
@@ -60,16 +64,39 @@ struct HostingStats {
     start_time: Option<String>,
 }
 
-// Pfade - Fester Pfad zum Projekt
+// Pfade - Dokumenten-Ordner für Benutzer-Daten
+fn get_app_data_dir() -> PathBuf {
+    // Dokumenten-Ordner ermitteln
+    if let Some(documents) = dirs::document_dir() {
+        let app_dir = documents.join("Nexus Discord Tool");
+        // Ordner erstellen falls nicht vorhanden
+        let _ = fs::create_dir_all(&app_dir);
+        return app_dir;
+    }
+    
+    // Fallback: User-Home
+    if let Some(home) = dirs::home_dir() {
+        let app_dir = home.join("Nexus Discord Tool");
+        let _ = fs::create_dir_all(&app_dir);
+        return app_dir;
+    }
+    
+    // Letzter Fallback
+    PathBuf::from(".")
+}
+
 fn get_project_dir() -> PathBuf {
-    // Versuche verschiedene Pfade
+    // Versuche verschiedene Pfade für Bot-Code
     let possible_paths = [
-        PathBuf::from(r"C:\Users\110ha\Desktop\Nexus-discord-tool"),
         std::env::current_exe()
-            .unwrap()
-            .parent()
-            .unwrap()
-            .join("..").join("..").join(".."),
+            .ok()
+            .and_then(|p| p.parent().map(|p| p.to_path_buf()))
+            .unwrap_or_default(),
+        std::env::current_exe()
+            .ok()
+            .and_then(|p| p.parent().map(|p| p.join("..").join("..").join("..")))
+            .unwrap_or_default(),
+        PathBuf::from(r"C:\Users\110ha\Desktop\Nexus-discord-tool"),
     ];
     
     for path in &possible_paths {
@@ -84,7 +111,8 @@ fn get_project_dir() -> PathBuf {
 }
 
 fn get_config_path() -> PathBuf {
-    get_project_dir().join("bot").join("config.json")
+    // Config wird im Dokumenten-Ordner gespeichert
+    get_app_data_dir().join("config.json")
 }
 
 fn get_bot_dir() -> PathBuf {
@@ -126,30 +154,94 @@ fn load_config() -> Result<BotConfig, String> {
     Ok(config)
 }
 
+// Alle gespeicherten Daten löschen
+#[tauri::command]
+fn clear_all_data() -> Result<String, String> {
+    let app_data_dir = get_app_data_dir();
+    let bot_dir = get_bot_dir();
+    
+    let mut deleted = Vec::new();
+    
+    // Config im Dokumenten-Ordner löschen
+    let app_config = app_data_dir.join("config.json");
+    if app_config.exists() {
+        fs::remove_file(&app_config).map_err(|e| e.to_string())?;
+        deleted.push("Dokumenten-Config");
+    }
+    
+    // Config im Bot-Ordner löschen
+    let bot_config = bot_dir.join("config.json");
+    if bot_config.exists() {
+        fs::remove_file(&bot_config).map_err(|e| e.to_string())?;
+        deleted.push("Bot-Config");
+    }
+    
+    // Settings im Bot-Ordner löschen
+    let settings = bot_dir.join("settings.json");
+    if settings.exists() {
+        fs::remove_file(&settings).map_err(|e| e.to_string())?;
+        deleted.push("Settings");
+    }
+    
+    // Delete logs
+    let logs = bot_dir.join("bot.log");
+    if logs.exists() {
+        fs::remove_file(&logs).map_err(|e| e.to_string())?;
+        deleted.push("Logs");
+    }
+    
+    if deleted.is_empty() {
+        Ok("No data to delete found".to_string())
+    } else {
+        Ok(format!("Deleted: {}", deleted.join(", ")))
+    }
+}
+
+// Config-Speicherort abrufen
+#[tauri::command]
+fn get_config_location() -> Result<String, String> {
+    Ok(get_app_data_dir().to_string_lossy().to_string())
+}
+
+// Status-Config speichern
+#[tauri::command]
+fn save_status_config(config: String) -> Result<String, String> {
+    let bot_dir = get_bot_dir();
+    let status_path = bot_dir.join("status-config.json");
+    
+    fs::write(&status_path, &config).map_err(|e| e.to_string())?;
+    
+    Ok("Status config saved".to_string())
+}
+
 // Bot starten
 #[tauri::command]
 fn start_bot(state: State<BotProcess>, start_time: State<BotStartTime>) -> Result<String, String> {
     let mut process = state.0.lock().map_err(|e| e.to_string())?;
     
     if process.is_some() {
-        return Err("Bot läuft bereits".to_string());
+        return Err("Bot is already running".to_string());
     }
     
     let bot_dir = get_bot_dir();
+    let app_config_path = get_config_path(); // In documents folder
+    let bot_config_path = bot_dir.join("config.json"); // In bot folder
     
-    // Prüfe ob config.json existiert
-    let config_path = bot_dir.join("config.json");
-    if !config_path.exists() {
-        return Err("Bitte zuerst die Konfiguration speichern".to_string());
+    // Check if config.json exists in documents folder
+    if !app_config_path.exists() {
+        return Err("Please save the configuration first".to_string());
     }
     
-    // Prüfe ob Token gesetzt ist
-    let config_content = fs::read_to_string(&config_path).map_err(|e| e.to_string())?;
+    // Check if token is set
+    let config_content = fs::read_to_string(&app_config_path).map_err(|e| e.to_string())?;
     let config: BotConfig = serde_json::from_str(&config_content).map_err(|e| e.to_string())?;
     
     if config.token.is_empty() {
-        return Err("Bitte zuerst einen Bot Token eingeben".to_string());
+        return Err("Please enter a Bot Token first".to_string());
     }
+    
+    // Copy config.json to bot folder (bot needs it there)
+    fs::copy(&app_config_path, &bot_config_path).map_err(|e| e.to_string())?;
     
     #[cfg(windows)]
     let child = Command::new("node")
@@ -159,7 +251,7 @@ fn start_bot(state: State<BotProcess>, start_time: State<BotStartTime>) -> Resul
         .stderr(Stdio::null())
         .creation_flags(CREATE_NO_WINDOW)
         .spawn()
-        .map_err(|e| format!("Fehler beim Starten: {}. Ist Node.js installiert?", e))?;
+        .map_err(|e| format!("Error starting: {}. Is Node.js installed?", e))?;
     
     #[cfg(not(windows))]
     let child = Command::new("node")
@@ -168,15 +260,62 @@ fn start_bot(state: State<BotProcess>, start_time: State<BotStartTime>) -> Resul
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .spawn()
-        .map_err(|e| format!("Fehler beim Starten: {}. Ist Node.js installiert?", e))?;
+        .map_err(|e| format!("Error starting: {}. Is Node.js installed?", e))?;
     
     *process = Some(child);
     
-    // Startzeit speichern
+    // Save start time
     let mut time = start_time.0.lock().map_err(|e| e.to_string())?;
     *time = Some(SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs());
     
-    Ok("Bot gestartet".to_string())
+    Ok("Bot started".to_string())
+}
+
+// Prozess und alle Kindprozesse beenden (Windows)
+#[cfg(windows)]
+fn kill_process_tree(pid: u32) {
+    // taskkill /F /T /PID beendet Prozess und alle Kindprozesse
+    let _ = Command::new("taskkill")
+        .args(["/F", "/T", "/PID", &pid.to_string()])
+        .creation_flags(CREATE_NO_WINDOW)
+        .output();
+}
+
+#[cfg(not(windows))]
+fn kill_process_tree(pid: u32) {
+    // Auf Unix: kill -9 -<pid> für Prozessgruppe
+    let _ = Command::new("kill")
+        .args(["-9", &format!("-{}", pid)])
+        .output();
+}
+
+// Alle Node-Prozesse für den Bot beenden
+fn cleanup_bot_processes() {
+    #[cfg(windows)]
+    {
+        // Versuche über Port 47832 zu identifizieren und beenden
+        // Dann Fallback auf node.exe mit Fenstertitel
+        let _ = Command::new("cmd")
+            .args(["/C", "for /f \"tokens=5\" %a in ('netstat -ano ^| findstr :47832 ^| findstr LISTENING') do taskkill /F /PID %a 2>nul"])
+            .creation_flags(CREATE_NO_WINDOW)
+            .output();
+    }
+    
+    #[cfg(not(windows))]
+    {
+        // Unix: fuser zum Beenden von Prozessen auf Port
+        let _ = Command::new("sh")
+            .args(["-c", "fuser -k 47832/tcp 2>/dev/null"])
+            .output();
+    }
+}
+
+// Tauri-Befehl zum manuellen Cleanup
+#[tauri::command]
+fn force_cleanup_bot() -> Result<String, String> {
+    cleanup_bot_processes();
+    std::thread::sleep(std::time::Duration::from_millis(500));
+    Ok("Cleanup durchgeführt".to_string())
 }
 
 // Bot stoppen
@@ -185,16 +324,26 @@ fn stop_bot(state: State<BotProcess>, start_time: State<BotStartTime>) -> Result
     let mut process = state.0.lock().map_err(|e| e.to_string())?;
     
     if let Some(mut child) = process.take() {
+        let pid = child.id();
+        
+        // Erst versuchen normal zu beenden
         let _ = child.kill();
+        
+        // Then kill the entire process tree with taskkill
+        kill_process_tree(pid);
+        
+        // Wait until terminated
         let _ = child.wait();
         
-        // Startzeit zurücksetzen
+        // Reset start time
         let mut time = start_time.0.lock().map_err(|e| e.to_string())?;
         *time = None;
         
-        Ok("Bot gestoppt".to_string())
+        Ok("Bot stopped".to_string())
     } else {
-        Err("Bot läuft nicht".to_string())
+        // Still try cleanup in case process was started externally
+        cleanup_bot_processes();
+        Err("Bot is not running".to_string())
     }
 }
 
@@ -237,21 +386,27 @@ fn get_bot_status(state: State<BotProcess>, start_time: State<BotStartTime>) -> 
     }
 }
 
-// Bot neustarten
+// Restart bot
 #[tauri::command]
 fn restart_bot(state: State<BotProcess>, start_time: State<BotStartTime>) -> Result<String, String> {
-    // Erst stoppen
+    // First stop with complete cleanup
     {
         let mut process = state.0.lock().map_err(|e| e.to_string())?;
         if let Some(mut child) = process.take() {
+            let pid = child.id();
             let _ = child.kill();
+            kill_process_tree(pid);
             let _ = child.wait();
         }
     }
     
-    std::thread::sleep(std::time::Duration::from_millis(500));
+    // Extra cleanup for hanging processes
+    cleanup_bot_processes();
     
-    // Dann starten
+    // Wait a bit longer to ensure process is terminated
+    std::thread::sleep(std::time::Duration::from_millis(1000));
+    
+    // Then start
     let mut process = state.0.lock().map_err(|e| e.to_string())?;
     let bot_dir = get_bot_dir();
     
@@ -263,7 +418,7 @@ fn restart_bot(state: State<BotProcess>, start_time: State<BotStartTime>) -> Res
         .stderr(Stdio::null())
         .creation_flags(CREATE_NO_WINDOW)
         .spawn()
-        .map_err(|e| format!("Fehler beim Neustarten: {}", e))?;
+        .map_err(|e| format!("Error restarting: {}", e))?;
     
     #[cfg(not(windows))]
     let child = Command::new("node")
@@ -272,15 +427,15 @@ fn restart_bot(state: State<BotProcess>, start_time: State<BotStartTime>) -> Res
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .spawn()
-        .map_err(|e| format!("Fehler beim Neustarten: {}", e))?;
+        .map_err(|e| format!("Error restarting: {}", e))?;
     
     *process = Some(child);
     
-    // Startzeit aktualisieren
+    // Update start time
     let mut time = start_time.0.lock().map_err(|e| e.to_string())?;
     *time = Some(SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs());
     
-    Ok("Bot neugestartet".to_string())
+    Ok("Bot restarted".to_string())
 }
 
 // Hosting-Statistiken abrufen
@@ -380,7 +535,7 @@ fn format_timestamp(timestamp: u64) -> String {
     format!("{:02}.{:02}.{} {:02}:{:02}", day, month, year, hours, minutes)
 }
 
-// Logs lesen
+// Read logs
 #[tauri::command]
 fn read_logs() -> Result<String, String> {
     let bot_dir = get_bot_dir();
@@ -399,7 +554,7 @@ fn read_logs() -> Result<String, String> {
     Ok(lines[start..].join("\n"))
 }
 
-// Logs löschen
+// Clear logs
 #[tauri::command]
 fn clear_logs() -> Result<String, String> {
     let bot_dir = get_bot_dir();
@@ -409,7 +564,7 @@ fn clear_logs() -> Result<String, String> {
         fs::write(&log_path, "").map_err(|e| e.to_string())?;
     }
     
-    Ok("Logs gelöscht".to_string())
+    Ok("Logs cleared".to_string())
 }
 
 // Bot API Status prüfen
@@ -424,7 +579,7 @@ async fn check_bot_api() -> Result<String, String> {
         .get("http://127.0.0.1:47832/status")
         .send()
         .await
-        .map_err(|_| "Bot API nicht erreichbar".to_string())?;
+        .map_err(|_| "Bot API not reachable".to_string())?;
     
     let body = response.text().await.map_err(|e| e.to_string())?;
     Ok(body)
@@ -442,10 +597,10 @@ async fn get_bot_data() -> Result<String, String> {
         .get("http://127.0.0.1:47832/data")
         .send()
         .await
-        .map_err(|_| "Bot API nicht erreichbar".to_string())?;
+        .map_err(|_| "Bot API not reachable".to_string())?;
     
     if !response.status().is_success() {
-        return Err("Bot nicht bereit".to_string());
+        return Err("Bot not ready".to_string());
     }
     
     let body = response.text().await.map_err(|e| e.to_string())?;
@@ -468,7 +623,109 @@ async fn execute_bot_action(action: String, params: String) -> Result<String, St
         .body(body)
         .send()
         .await
-        .map_err(|_| "Bot API nicht erreichbar".to_string())?;
+        .map_err(|_| "Bot API not reachable".to_string())?;
+    
+    let result = response.text().await.map_err(|e| e.to_string())?;
+    Ok(result)
+}
+
+// Schneller Ping-Check
+#[tauri::command]
+async fn ping_bot() -> Result<String, String> {
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(1))
+        .build()
+        .map_err(|e| e.to_string())?;
+    
+    let response = client
+        .get("http://127.0.0.1:47832/ping")
+        .send()
+        .await
+        .map_err(|_| "Bot not reachable".to_string())?;
+    
+    let body = response.text().await.map_err(|e| e.to_string())?;
+    Ok(body)
+}
+
+// Server-Liste abrufen
+#[tauri::command]
+async fn get_bot_servers() -> Result<String, String> {
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(5))
+        .build()
+        .map_err(|e| e.to_string())?;
+    
+    let response = client
+        .get("http://127.0.0.1:47832/servers")
+        .send()
+        .await
+        .map_err(|_| "Bot API not reachable".to_string())?;
+    
+    let body = response.text().await.map_err(|e| e.to_string())?;
+    Ok(body)
+}
+
+// Server wechseln
+#[tauri::command]
+async fn switch_bot_server(guild_id: String) -> Result<String, String> {
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(5))
+        .build()
+        .map_err(|e| e.to_string())?;
+    
+    let body = format!(r#"{{"guildId":"{}"}}"#, guild_id);
+    
+    let response = client
+        .post("http://127.0.0.1:47832/switch-server")
+        .header("Content-Type", "application/json")
+        .body(body)
+        .send()
+        .await
+        .map_err(|_| "Bot API not reachable".to_string())?;
+    
+    let result = response.text().await.map_err(|e| e.to_string())?;
+    Ok(result)
+}
+
+// Bot-Steuerbefehl senden
+#[tauri::command]
+async fn send_bot_control(command: String) -> Result<String, String> {
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(10))
+        .build()
+        .map_err(|e| e.to_string())?;
+    
+    let body = format!(r#"{{"command":"{}"}}"#, command);
+    
+    let response = client
+        .post("http://127.0.0.1:47832/control")
+        .header("Content-Type", "application/json")
+        .body(body)
+        .send()
+        .await
+        .map_err(|_| "Bot API not reachable".to_string())?;
+    
+    let result = response.text().await.map_err(|e| e.to_string())?;
+    Ok(result)
+}
+
+// Schnellaktion ausführen
+#[tauri::command]
+async fn execute_quick_action(action: String, target: String, value: String) -> Result<String, String> {
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(10))
+        .build()
+        .map_err(|e| e.to_string())?;
+    
+    let body = format!(r#"{{"action":"{}","target":"{}","value":"{}"}}"#, action, target, value);
+    
+    let response = client
+        .post("http://127.0.0.1:47832/quick-action")
+        .header("Content-Type", "application/json")
+        .body(body)
+        .send()
+        .await
+        .map_err(|_| "Bot API not reachable".to_string())?;
     
     let result = response.text().await.map_err(|e| e.to_string())?;
     Ok(result)
@@ -546,7 +803,16 @@ fn get_presence_status() -> (String, String) {
     ("Nexus Discord Tool".to_string(), "Bot Management Dashboard".to_string())
 }
 
+// Fenster in System Tray minimieren (verstecken)
+#[tauri::command]
+fn minimize_window(window: tauri::Window) {
+    let _ = window.hide();
+}
+
 fn main() {
+    // Cleanup beim Start - alte Prozesse beenden
+    cleanup_bot_processes();
+    
     // Rich Presence starten
     start_rich_presence();
     
@@ -555,20 +821,101 @@ fn main() {
         .manage(BotProcess(Mutex::new(None)))
         .manage(BotStartTime(Mutex::new(None)))
         .manage(RichPresenceActive(AtomicBool::new(true)))
+        .setup(|app| {
+            // System Tray erstellen
+            let show_item = MenuItem::with_id(app, "show", "Öffnen", true, None::<&str>)?;
+            let quit_item = MenuItem::with_id(app, "quit", "Beenden", true, None::<&str>)?;
+            let menu = Menu::with_items(app, &[&show_item, &quit_item])?;
+            
+            // Tray Icon laden
+            let icon = Image::from_path("icons/icon.png")
+                .or_else(|_| Image::from_path("icons/32x32.png"))
+                .unwrap_or_else(|_| Image::from_bytes(include_bytes!("../icons/icon.png")).expect("Failed to load embedded icon"));
+            
+            let _tray = TrayIconBuilder::new()
+                .icon(icon)
+                .menu(&menu)
+                .tooltip("Nexus Discord Tool")
+                .on_menu_event(|app, event| {
+                    match event.id.as_ref() {
+                        "show" => {
+                            if let Some(window) = app.get_webview_window("main") {
+                                let _ = window.show();
+                                let _ = window.set_focus();
+                            }
+                        }
+                        "quit" => {
+                            // Bot cleanup vor dem Beenden
+                            if let Some(state) = app.try_state::<BotProcess>() {
+                                let mut process = state.0.lock().unwrap();
+                                if let Some(ref mut child) = *process {
+                                    let pid: u32 = child.id();
+                                    let _ = child.kill();
+                                    kill_process_tree(pid);
+                                    let _ = child.wait();
+                                }
+                                *process = None;
+                            }
+                            cleanup_bot_processes();
+                            app.exit(0);
+                        }
+                        _ => {}
+                    }
+                })
+                .on_tray_icon_event(|tray, event| {
+                    // Doppelklick oder Linksklick öffnet das Fenster
+                    if let TrayIconEvent::Click { button: MouseButton::Left, button_state: MouseButtonState::Up, .. } = event {
+                        if let Some(window) = tray.app_handle().get_webview_window("main") {
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                        }
+                    }
+                })
+                .build(app)?;
+            
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             save_config,
             load_config,
+            clear_all_data,
+            get_config_location,
+            save_status_config,
             start_bot,
             stop_bot,
             get_bot_status,
             restart_bot,
+            force_cleanup_bot,
             get_hosting_stats,
             read_logs,
             clear_logs,
             check_bot_api,
             get_bot_data,
-            execute_bot_action
+            execute_bot_action,
+            ping_bot,
+            get_bot_servers,
+            switch_bot_server,
+            send_bot_control,
+            execute_quick_action,
+            minimize_window
         ])
+        .on_window_event(|window, event| {
+            // Bot beenden wenn App geschlossen wird
+            if let tauri::WindowEvent::CloseRequested { .. } = event {
+                if let Some(state) = window.try_state::<BotProcess>() {
+                    let mut process = state.0.lock().unwrap();
+                    if let Some(ref mut child) = *process {
+                        let pid: u32 = child.id();
+                        let _ = child.kill();
+                        kill_process_tree(pid);
+                        let _ = child.wait();
+                    }
+                    *process = None;
+                }
+                // Extra cleanup
+                cleanup_bot_processes();
+            }
+        })
         .run(tauri::generate_context!())
-        .expect("Fehler beim Starten der Anwendung");
+        .expect("Error starting the application");
 }

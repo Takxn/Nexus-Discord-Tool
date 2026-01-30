@@ -11,13 +11,16 @@
     "windows": [
       {
         "title": "Nexus Discord Tool",
-        "width": 1000,
-        "height": 700,
-        "minWidth": 800,
+        "width": 1200,
+        "height": 800,
+        "minWidth": 900,
         "minHeight": 600,
         "resizable": true,
+        "fullscreen": false,
         "center": true,
-        "decorations": true
+        "decorations": true,
+        "maximizable": true,
+        "minimizable": true
       }
     ],
     "security": {

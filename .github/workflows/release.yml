@@ -67,12 +67,17 @@ jobs:
             ## Nexus Discord Tool
             
             ### Downloads
-            - **Windows**: `.msi` oder `.exe` (Setup)
-            - **macOS**: `.dmg` (ARM64 für M1/M2/M3) oder (Intel)
-            - **Linux**: `.AppImage` oder `.deb`
+            - **Windows**: `.msi` or `.exe` (Setup)
+            - **macOS**: `.dmg` (ARM64 for M1/M2/M3) or (Intel)
+            - **Linux**: `.AppImage` or `.deb`
             
-            ### Änderungen
-            Siehe Commit-Historie für Details.
+            ### Changes
+            See commit history for details.
+            
+            ### Setup Requirements
+            1. Enable all 3 Privileged Gateway Intents in Discord Developer Portal
+            2. Invite bot with Administrator permissions
+            3. Position bot role above other roles
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
