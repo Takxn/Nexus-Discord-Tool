@@ -167,4 +167,5 @@ MIT License - See LICENSE file for details.
 
 Nexus Team
 
-Erstellt mit dem Nexus Discord Tool
+<img width="2004" height="1460" alt="image" src="https://github.com/user-attachments/assets/05aad099-b916-4c9d-badb-450ab550905c" />
+
