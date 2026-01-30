@@ -1,7 +1,7 @@
 {
   "name": "nexus-discord-tool",
-  "version": "1.0.0",
-  "description": "Desktop-Anwendung zur Konfiguration, Verwaltung und Hosting von Discord-Bots",
+  "version": "1.2.0",
+  "description": "Desktop application for configuring, managing and hosting Discord bots",
   "author": "Max",
   "license": "MIT",
   "scripts": {

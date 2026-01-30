@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Nexus Discord Tool",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "identifier": "com.nexus.discord-tool",
   "build": {
     "frontendDist": "../src"
@@ -44,7 +44,7 @@
     "copyright": "© 2026 Nexus+",
     "category": "Utility",
     "shortDescription": "Discord Bot Management Tool",
-    "longDescription": "Nexus Discord Tool - Ein umfassendes Tool zur Verwaltung deines Discord Bots mit Dashboard, Embed Builder, Einstellungen und mehr.",
+    "longDescription": "Nexus Discord Tool - A comprehensive tool for managing your Discord bot with Dashboard, Embed Builder, Settings and more.",
     "windows": {
       "wix": {
         "language": "de-DE"

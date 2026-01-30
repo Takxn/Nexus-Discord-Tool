@@ -1,7 +1,7 @@
 {
   "name": "nexus-discord-bot",
-  "version": "1.0.0",
-  "description": "Discord Bot für das Nexus Discord Tool",
+  "version": "1.2.0",
+  "description": "Discord Bot for Nexus Discord Tool",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
