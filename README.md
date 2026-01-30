@@ -4,34 +4,34 @@
   <img src="logo.png" alt="Nexus Logo" width="150">
 </p>
 
-Eine moderne Desktop-Anwendung zur Konfiguration, Verwaltung und 24/7-Hosting von Discord-Bots.
+A modern desktop application for configuring, managing, and 24/7 hosting of Discord bots.
 
 ## Features
 
-- **Bot-Konfiguration**: Einfache Einrichtung von Bot Token, Client ID und Guild ID
-- **Server-Management**: Kanäle, Rollen und Mitglieder verwalten
-- **24/7 Hosting**: Lokales Bot-Hosting ohne externe Server
-- **Echtzeit-Logs**: Live-Protokollierung aller Bot-Aktivitäten
-- **Analytics**: Server-Statistiken und Aktivitäts-Übersicht
-- **Modernes Design**: Dunkles Theme mit roten Akzenten
+- **Bot Configuration**: Easy setup of Bot Token, Client ID, and Guild ID
+- **Server Management**: Manage channels, roles, and members
+- **24/7 Hosting**: Local bot hosting without external servers
+- **Real-time Logs**: Live logging of all bot activities
+- **Analytics**: Server statistics and activity overview
+- **Modern Design**: Dark theme with red accents
 
-## Voraussetzungen
+## Prerequisites
 
-Stelle sicher, dass folgende Software installiert ist:
+Make sure the following software is installed:
 
-- **Node.js** (v18 oder höher): [Download](https://nodejs.org/)
-- **Rust** (mit Cargo): [Download](https://rustup.rs/)
+- **Node.js** (v18 or higher): [Download](https://nodejs.org/)
+- **Rust** (with Cargo): [Download](https://rustup.rs/)
 - **Visual Studio Build Tools** (Windows): [Download](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
 
 ## Installation
 
-### 1. Repository klonen oder herunterladen
+### 1. Clone or download the repository
 
 ```bash
 cd Nexus-discord-tool
 ```
 
-### 2. Dependencies installieren
+### 2. Install dependencies
 
 ```bash
 # Root Dependencies (Tauri)
@@ -43,126 +43,128 @@ npm install
 cd ..
 ```
 
-### 3. Discord Bot erstellen
+### 3. Create Discord Bot
 
-1. Gehe zum [Discord Developer Portal](https://discord.com/developers/applications)
-2. Klicke auf "New Application" und gib einen Namen ein
-3. Gehe zu "Bot" im Seitenmenü
-4. Klicke auf "Add Bot"
-5. Kopiere den **Bot Token** (unter "Token")
-6. Aktiviere unter "Privileged Gateway Intents":
+1. Go to the [Discord Developer Portal](https://discord.com/developers/applications)
+2. Click "New Application" and enter a name
+3. Go to "Bot" in the sidebar
+4. Click "Add Bot"
+5. Copy the **Bot Token** (under "Token")
+6. Enable under "Privileged Gateway Intents":
    - PRESENCE INTENT
    - SERVER MEMBERS INTENT
    - MESSAGE CONTENT INTENT
-7. Kopiere die **Application ID** (unter "General Information")
+7. Copy the **Application ID** (under "General Information")
 
-### 4. Bot zum Server einladen
+### 4. Invite bot to server
 
-1. Gehe zu "OAuth2" → "URL Generator"
-2. Wähle Scopes: `bot`, `applications.commands`
-3. Wähle Permissions: `Administrator` (oder spezifische Berechtigungen)
-4. Kopiere die generierte URL und öffne sie im Browser
-5. Wähle deinen Server und autorisiere den Bot
+1. Go to "OAuth2" → "URL Generator"
+2. Select Scopes: `bot`, `applications.commands`
+3. Select Permissions: `Administrator` (or specific permissions)
+4. Copy the generated URL and open it in your browser
+5. Select your server and authorize the bot
 
-### 5. Anwendung starten
+### 5. Start the application
 
-**Entwicklungsmodus:**
+**Development mode:**
 ```bash
 npm run dev
 ```
 
-**Produktions-Build:**
+**Production build:**
 ```bash
 npm run build
 ```
 
-Die erstellte Anwendung findest du unter `src-tauri/target/release/`.
+The built application can be found under `src-tauri/target/release/`.
 
-## Verwendung
+## Usage
 
-### Bot-Konfiguration
+### Bot Configuration
 
-1. Öffne die Anwendung
-2. Gehe zur "Konfiguration"-Seite
-3. Gib ein:
-   - **Bot Token**: Dein Discord Bot Token
-   - **Client ID**: Die Application ID
-   - **Guild ID**: Die Server ID (Rechtsklick auf Server → "Server-ID kopieren")
-4. Klicke auf "Speichern"
+1. Open the application
+2. Go to the "Configuration" page
+3. Enter:
+   - **Bot Token**: Your Discord Bot Token
+   - **Client ID**: The Application ID
+   - **Guild ID**: The Server ID (Right-click on server → "Copy Server ID")
+4. Click "Save"
 
-### Bot starten
+### Start Bot
 
-1. Gehe zur "Hosting"-Seite
-2. Klicke auf "Start"
-3. Der Status-Indikator zeigt an, ob der Bot läuft
+1. Go to the "Hosting" page
+2. Click "Start"
+3. The status indicator shows whether the bot is running
 
-### Verfügbare Bot-Commands
+### Available Bot Commands
 
-| Command | Beschreibung |
-|---------|--------------|
-| `/ping` | Zeigt die Bot-Latenz |
-| `/info` | Bot-Informationen |
-| `/serverinfo` | Server-Statistiken |
-| `/userinfo [@user]` | Benutzer-Informationen |
-| `/createchannel <name> [type]` | Kanal erstellen |
-| `/createrole <name> [color]` | Rolle erstellen |
-| `/kick <@user> [reason]` | Benutzer kicken |
-| `/ban <@user> [reason]` | Benutzer bannen |
-| `/clear <amount>` | Nachrichten löschen |
-| `/stats` | Server-Statistiken |
+| Command | Description |
+|---------|-------------|
+| `/ping` | Shows bot latency |
+| `/info` | Bot information |
+| `/serverinfo` | Server statistics |
+| `/userinfo [@user]` | User information |
+| `/createchannel <name> [type]` | Create channel |
+| `/createrole <name> [color]` | Create role |
+| `/kick <@user> [reason]` | Kick user |
+| `/ban <@user> [reason]` | Ban user |
+| `/clear <amount>` | Delete messages |
+| `/stats` | Server statistics |
 
-## Projektstruktur
+## Project Structure
 
 ```
 nexus-discord-tool/
-├── src-tauri/          # Rust-Backend (Tauri)
+├── src-tauri/          # Rust Backend (Tauri)
 │   ├── Cargo.toml      # Rust Dependencies
-│   ├── tauri.conf.json # Tauri Konfiguration
+│   ├── tauri.conf.json # Tauri Configuration
 │   └── src/
-│       └── main.rs     # Backend-Logik
-├── src/                # Web-Frontend
-│   ├── index.html      # Haupt-UI
+│       └── main.rs     # Backend Logic
+├── src/                # Web Frontend
+│   ├── index.html      # Main UI
 │   ├── styles.css      # Styling
-│   └── app.js          # Frontend-Logik
+│   └── app.js          # Frontend Logic
 ├── bot/                # Discord Bot
 │   ├── package.json    # Bot Dependencies
-│   ├── config.json     # Bot-Konfiguration
-│   └── index.js        # Bot-Logik
-├── logo.png            # Anwendungs-Logo
+│   ├── config.json     # Bot Configuration
+│   └── index.js        # Bot Logic
+├── logo.png            # Application Logo
 ├── logo.ico            # Windows Icon
 ├── package.json        # Root Dependencies
-└── README.md           # Diese Datei
+└── README.md           # This file
 ```
 
 ## Troubleshooting
 
-### "Bot Token ungültig"
-- Stelle sicher, dass du den korrekten Token kopiert hast
-- Generiere ggf. einen neuen Token im Developer Portal
+### "Invalid Bot Token"
+- Make sure you copied the correct token
+- Generate a new token in the Developer Portal if necessary
 
-### "Slash Commands nicht sichtbar"
-- Guild Commands sind sofort verfügbar
-- Globale Commands können bis zu 1 Stunde dauern
-- Stelle sicher, dass die Guild ID korrekt ist
+### "Slash Commands not visible"
+- Guild Commands are available immediately
+- Global Commands can take up to 1 hour
+- Make sure the Guild ID is correct
 
-### "Bot kann Kanäle nicht erstellen"
-- Überprüfe die Bot-Berechtigungen auf dem Server
-- Der Bot benötigt "Manage Channels" Permission
+### "Bot cannot create channels"
+- Check the bot permissions on the server
+- The bot requires "Manage Channels" permission
 
-### Rust Compilation Fehler
-- Installiere Visual Studio Build Tools (Windows)
-- Führe `rustup update` aus
+### Rust Compilation Errors
+- Install Visual Studio Build Tools (Windows)
+- Run `rustup update`
 
-## Sicherheitshinweise
+## Security Notes
 
-- **Teile niemals deinen Bot Token!**
-- Der Token wird lokal in `bot/config.json` gespeichert
-- Füge `config.json` zu `.gitignore` hinzu, wenn du das Projekt versionierst
+- **Never share your Bot Token!**
+- The token is stored locally in `bot/config.json`
+- Add `config.json` to `.gitignore` if you version the project
 
-## Lizenz
+## License
 
-MIT License - Siehe LICENSE Datei für Details.
+MIT License - See LICENSE file for details.
 
-## Autor
+## Author
+
+Nexus Team
 
 Erstellt mit dem Nexus Discord Tool
