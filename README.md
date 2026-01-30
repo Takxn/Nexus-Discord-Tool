@@ -4,168 +4,114 @@
   <img src="logo.png" alt="Nexus Logo" width="150">
 </p>
 
-A modern desktop application for configuring, managing, and 24/7 hosting of Discord bots.
+<p align="center">
+  <b>The Ultimate Discord Bot Management Tool</b><br>
+  Configure, manage, and host your Discord bot 24/7 - all from one desktop application.
+</p>
+
+---
+
+## Pricing
+
+| Plan | Price | Features |
+|------|-------|----------|
+| **Lifetime Key** | **€2.50** | Full access forever, all features, all updates |
+
+> Purchase your key at [discord.gg/nexus-plus](https://discord.gg/nexus-plus)
+
+---
 
 ## Features
 
-- **Bot Configuration**: Easy setup of Bot Token, Client ID, and Guild ID
-- **Server Management**: Manage channels, roles, and members
-- **24/7 Hosting**: Local bot hosting without external servers
-- **Real-time Logs**: Live logging of all bot activities
-- **Analytics**: Server statistics and activity overview
-- **Modern Design**: Dark theme with red accents
+### Bot Management
+- **24/7 Local Hosting** - Run your bot directly from your PC
+- **Real-time Dashboard** - Monitor server stats, members, and bot status
+- **Quick Actions** - DM users, announce messages, manage roles with one click
+- **Multi-Server Support** - Switch between servers easily
 
-## Prerequisites
+### Moderation Tools
+- **Kick / Ban / Timeout** - Full moderation control
+- **Warn System** - Track user warnings
+- **Auto-Mod** - Automatic message filtering
+- **Ticket System** - Support ticket management
 
-Make sure the following software is installed:
+### Engagement Features
+- **Leveling System** - XP and level progression for members
+- **Giveaways** - Create and manage giveaways
+- **Reaction Roles** - Auto-assign roles via reactions
+- **Welcome Messages** - Customizable join/leave messages
 
-- **Node.js** (v18 or higher): [Download](https://nodejs.org/)
-- **Rust** (with Cargo): [Download](https://rustup.rs/)
-- **Visual Studio Build Tools** (Windows): [Download](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
+### Customization
+- **Embed Builder** - Create beautiful custom embeds
+- **Custom Commands** - Set up auto-responses
+- **Scheduled Messages** - Send messages at specific times
+- **Rich Presence** - Show bot activity on Discord
 
-## Installation
+---
 
-### 1. Clone or download the repository
+## Requirements
 
-```bash
-cd Nexus-discord-tool
-```
+- **Windows 10/11** (64-bit)
+- **Node.js v18+** - [Download here](https://nodejs.org)
+- **Discord Bot Token** - [Create at Discord Developer Portal](https://discord.com/developers/applications)
 
-### 2. Install dependencies
+---
 
-```bash
-# Root Dependencies (Tauri)
-npm install
+## Setup
 
-# Bot Dependencies
-cd bot
-npm install
-cd ..
-```
+### 1. Discord Developer Portal
+1. Go to [discord.com/developers/applications](https://discord.com/developers/applications)
+2. Create a new application
+3. Go to **Bot** → Enable all **Privileged Gateway Intents**:
+   - ✅ PRESENCE INTENT
+   - ✅ SERVER MEMBERS INTENT
+   - ✅ MESSAGE CONTENT INTENT
+4. Copy your **Bot Token**
 
-### 3. Create Discord Bot
+### 2. Invite Bot to Server
+1. Go to **OAuth2** → **URL Generator**
+2. Select: `bot`, `applications.commands`
+3. Select: `Administrator` permission
+4. Open the generated URL and add bot to your server
 
-1. Go to the [Discord Developer Portal](https://discord.com/developers/applications)
-2. Click "New Application" and enter a name
-3. Go to "Bot" in the sidebar
-4. Click "Add Bot"
-5. Copy the **Bot Token** (under "Token")
-6. Enable under "Privileged Gateway Intents":
-   - PRESENCE INTENT
-   - SERVER MEMBERS INTENT
-   - MESSAGE CONTENT INTENT
-7. Copy the **Application ID** (under "General Information")
+### 3. Configure the App
+1. Open Nexus Discord Tool
+2. Enter your **Bot Token**, **Client ID**, and **Guild ID**
+3. Click **Save**
+4. Go to **Hosting** → Click **Start**
 
-### 4. Invite bot to server
+---
 
-1. Go to "OAuth2" → "URL Generator"
-2. Select Scopes: `bot`, `applications.commands`
-3. Select Permissions: `Administrator` (or specific permissions)
-4. Copy the generated URL and open it in your browser
-5. Select your server and authorize the bot
-
-### 5. Start the application
-
-**Development mode:**
-```bash
-npm run dev
-```
-
-**Production build:**
-```bash
-npm run build
-```
-
-The built application can be found under `src-tauri/target/release/`.
-
-## Usage
-
-### Bot Configuration
-
-1. Open the application
-2. Go to the "Configuration" page
-3. Enter:
-   - **Bot Token**: Your Discord Bot Token
-   - **Client ID**: The Application ID
-   - **Guild ID**: The Server ID (Right-click on server → "Copy Server ID")
-4. Click "Save"
-
-### Start Bot
-
-1. Go to the "Hosting" page
-2. Click "Start"
-3. The status indicator shows whether the bot is running
-
-### Available Bot Commands
+## Bot Commands
 
 | Command | Description |
 |---------|-------------|
-| `/ping` | Shows bot latency |
-| `/info` | Bot information |
+| `/help` | Show all commands |
+| `/ping` | Check bot latency |
 | `/serverinfo` | Server statistics |
-| `/userinfo [@user]` | User information |
-| `/createchannel <name> [type]` | Create channel |
-| `/createrole <name> [color]` | Create role |
-| `/kick <@user> [reason]` | Kick user |
-| `/ban <@user> [reason]` | Ban user |
-| `/clear <amount>` | Delete messages |
-| `/stats` | Server statistics |
+| `/userinfo` | User information |
+| `/kick` | Kick a user |
+| `/ban` | Ban a user |
+| `/timeout` | Timeout a user |
+| `/warn` | Warn a user |
+| `/clear` | Delete messages |
+| `/level` | Check XP level |
+| `/leaderboard` | XP leaderboard |
+| `/giveaway` | Create giveaway |
+| `/ticket` | Ticket system |
+| `/embed` | Create embed |
 
-## Project Structure
+---
 
-```
-nexus-discord-tool/
-├── src-tauri/          # Rust Backend (Tauri)
-│   ├── Cargo.toml      # Rust Dependencies
-│   ├── tauri.conf.json # Tauri Configuration
-│   └── src/
-│       └── main.rs     # Backend Logic
-├── src/                # Web Frontend
-│   ├── index.html      # Main UI
-│   ├── styles.css      # Styling
-│   └── app.js          # Frontend Logic
-├── bot/                # Discord Bot
-│   ├── package.json    # Bot Dependencies
-│   ├── config.json     # Bot Configuration
-│   └── index.js        # Bot Logic
-├── logo.png            # Application Logo
-├── logo.ico            # Windows Icon
-├── package.json        # Root Dependencies
-└── README.md           # This file
-```
+## Support
 
-## Troubleshooting
+- **Discord Server**: [discord.gg/nexus-plus](https://discord.gg/nexus-plus)
+- **Issues**: Report bugs in our Discord
 
-### "Invalid Bot Token"
-- Make sure you copied the correct token
-- Generate a new token in the Developer Portal if necessary
-
-### "Slash Commands not visible"
-- Guild Commands are available immediately
-- Global Commands can take up to 1 hour
-- Make sure the Guild ID is correct
-
-### "Bot cannot create channels"
-- Check the bot permissions on the server
-- The bot requires "Manage Channels" permission
-
-### Rust Compilation Errors
-- Install Visual Studio Build Tools (Windows)
-- Run `rustup update`
-
-## Security Notes
-
-- **Never share your Bot Token!**
-- The token is stored locally in `bot/config.json`
-- Add `config.json` to `.gitignore` if you version the project
+---
 
 ## License
 
-MIT License - See LICENSE file for details.
+This software requires a valid license key. Unauthorized distribution is prohibited.
 
-## Author
-
-Nexus Team
-
-<img width="2004" height="1460" alt="image" src="https://github.com/user-attachments/assets/05aad099-b916-4c9d-badb-450ab550905c" />
-
+**© 2026 Nexus+ Team**

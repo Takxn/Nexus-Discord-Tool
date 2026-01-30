@@ -47,21 +47,40 @@ jobs:
           tagName: v__VERSION__
           releaseName: 'Nexus Discord Tool v__VERSION__'
           releaseBody: |
-            ## Nexus Discord Tool
+            ## Nexus Discord Tool v__VERSION__
+            
+            **The Ultimate Discord Bot Management Tool**
+            
+            ### Pricing
+            - **Lifetime Key**: €2.50 (one-time payment)
+            - Purchase at: https://discord.gg/nexus-plus
             
             ### Downloads
-            - **Windows**: `.msi` or `.exe` (Setup)
+            - **Windows**: `.msi` (Installer) or `.exe` (Setup)
+            
+            ### Features
+            - 24/7 Local Bot Hosting
+            - Real-time Dashboard & Stats
+            - Moderation (Kick/Ban/Timeout/Warn)
+            - Leveling System & Leaderboards
+            - Giveaways & Reaction Roles
+            - Ticket System
+            - Embed Builder
+            - Quick Actions
             
             ### Requirements
+            - Windows 10/11 (64-bit)
             - Node.js v18+ (https://nodejs.org)
+            - Discord Bot Token
             
             ### Setup
             1. Enable all 3 Privileged Gateway Intents in Discord Developer Portal
             2. Invite bot with Administrator permissions
-            3. Position bot role above other roles
+            3. Enter Token, Client ID, Guild ID in the app
+            4. Click Start!
             
-            ### Changes
-            See commit history for details.
+            ### Support
+            Discord: https://discord.gg/nexus-plus
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
