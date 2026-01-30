@@ -179,6 +179,13 @@ fn copy_dir_recursive(src: &PathBuf, dst: &PathBuf) -> std::io::Result<()> {
 // Check if Node.js is installed
 #[tauri::command]
 fn check_node_installed() -> Result<String, String> {
+    #[cfg(windows)]
+    let output = Command::new("node")
+        .arg("--version")
+        .creation_flags(CREATE_NO_WINDOW)
+        .output();
+    
+    #[cfg(not(windows))]
     let output = Command::new("node")
         .arg("--version")
         .output();
@@ -194,6 +201,74 @@ fn check_node_installed() -> Result<String, String> {
         }
         Err(_) => Err("Node.js not installed. Please install Node.js from https://nodejs.org".to_string())
     }
+}
+
+// Check setup status - returns what's ready and what's missing
+#[tauri::command]
+fn check_setup_status() -> Result<String, String> {
+    let bot_dir = get_bot_dir();
+    let config_path = get_config_path();
+    
+    let mut status = serde_json::json!({
+        "node_installed": false,
+        "node_version": "",
+        "bot_files_exist": false,
+        "dependencies_installed": false,
+        "config_exists": false,
+        "token_set": false,
+        "ready": false
+    });
+    
+    // Check Node.js
+    #[cfg(windows)]
+    let node_check = Command::new("node")
+        .arg("--version")
+        .creation_flags(CREATE_NO_WINDOW)
+        .output();
+    
+    #[cfg(not(windows))]
+    let node_check = Command::new("node")
+        .arg("--version")
+        .output();
+    
+    if let Ok(output) = node_check {
+        if output.status.success() {
+            status["node_installed"] = serde_json::json!(true);
+            status["node_version"] = serde_json::json!(String::from_utf8_lossy(&output.stdout).trim().to_string());
+        }
+    }
+    
+    // Check bot files
+    if bot_dir.join("index.js").exists() && bot_dir.join("package.json").exists() {
+        status["bot_files_exist"] = serde_json::json!(true);
+    }
+    
+    // Check dependencies
+    let node_modules = bot_dir.join("node_modules");
+    if node_modules.exists() && node_modules.join("discord.js").exists() {
+        status["dependencies_installed"] = serde_json::json!(true);
+    }
+    
+    // Check config
+    if config_path.exists() {
+        status["config_exists"] = serde_json::json!(true);
+        
+        if let Ok(content) = fs::read_to_string(&config_path) {
+            if let Ok(config) = serde_json::from_str::<BotConfig>(&content) {
+                if !config.token.is_empty() {
+                    status["token_set"] = serde_json::json!(true);
+                }
+            }
+        }
+    }
+    
+    // Check if everything is ready
+    let ready = status["node_installed"].as_bool().unwrap_or(false)
+        && status["bot_files_exist"].as_bool().unwrap_or(false)
+        && status["token_set"].as_bool().unwrap_or(false);
+    status["ready"] = serde_json::json!(ready);
+    
+    Ok(status.to_string())
 }
 
 // Install bot dependencies
@@ -336,6 +411,11 @@ fn start_bot(state: State<BotProcess>, start_time: State<BotStartTime>) -> Resul
     let app_config_path = get_config_path(); // In documents folder
     let bot_config_path = bot_dir.join("config.json"); // In bot folder
     
+    // Check if bot files exist
+    if !bot_dir.join("index.js").exists() {
+        return Err("Bot files not found. Please reinstall the application.".to_string());
+    }
+    
     // Check if config.json exists in documents folder
     if !app_config_path.exists() {
         return Err("Please save the configuration first".to_string());
@@ -347,6 +427,36 @@ fn start_bot(state: State<BotProcess>, start_time: State<BotStartTime>) -> Resul
     
     if config.token.is_empty() {
         return Err("Please enter a Bot Token first".to_string());
+    }
+    
+    // Check if node_modules exists, if not install dependencies
+    let node_modules = bot_dir.join("node_modules");
+    if !node_modules.exists() || !node_modules.join("discord.js").exists() {
+        // Install dependencies synchronously
+        #[cfg(windows)]
+        let install_result = Command::new("cmd")
+            .args(["/C", "npm", "install", "--production"])
+            .current_dir(&bot_dir)
+            .creation_flags(CREATE_NO_WINDOW)
+            .output();
+        
+        #[cfg(not(windows))]
+        let install_result = Command::new("npm")
+            .args(["install", "--production"])
+            .current_dir(&bot_dir)
+            .output();
+        
+        match install_result {
+            Ok(output) => {
+                if !output.status.success() {
+                    let stderr = String::from_utf8_lossy(&output.stderr);
+                    return Err(format!("Failed to install dependencies: {}", stderr));
+                }
+            }
+            Err(e) => {
+                return Err(format!("Failed to run npm install: {}. Is Node.js installed?", e));
+            }
+        }
     }
     
     // Copy config.json to bot folder (bot needs it there)
@@ -1014,6 +1124,7 @@ fn main() {
             execute_quick_action,
             minimize_window,
             check_node_installed,
+            check_setup_status,
             install_bot_dependencies
         ])
         .on_window_event(|window, event| {

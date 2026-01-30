@@ -935,6 +935,17 @@ function loadStatusConfig() {
 
 // ==================== BOT CONTROL ====================
 
+// Check setup status
+async function checkSetupStatus() {
+    try {
+        const result = await invoke('check_setup_status');
+        return JSON.parse(result);
+    } catch (e) {
+        console.error('Setup status check failed:', e);
+        return null;
+    }
+}
+
 // Check if Node.js is installed
 async function checkNodeInstalled() {
     try {
@@ -960,34 +971,59 @@ async function installBotDependencies() {
 
 async function startBot() {
     try {
-        // First check if Node.js is installed
-        const nodeCheck = await checkNodeInstalled();
-        if (!nodeCheck.installed) {
-            showToast('Node.js is not installed! Please install from nodejs.org', 'error');
-            return;
-        }
+        // Check setup status first
+        const status = await checkSetupStatus();
         
-        showToast('Starting bot...', 'info');
+        if (status) {
+            // Check Node.js
+            if (!status.node_installed) {
+                showToast('Node.js is not installed! Please install from nodejs.org', 'error');
+                window.open('https://nodejs.org', '_blank');
+                return;
+            }
+            
+            // Check bot files
+            if (!status.bot_files_exist) {
+                showToast('Bot files not found. Please reinstall the application.', 'error');
+                return;
+            }
+            
+            // Check token
+            if (!status.token_set) {
+                showToast('Please enter your Bot Token in Configuration first!', 'error');
+                showPage('config');
+                return;
+            }
+        }
         
         // Cleanup old processes before starting
         try {
             await invoke('force_cleanup_bot');
         } catch (e) {}
         
+        // Check if dependencies need to be installed
+        if (status && !status.dependencies_installed) {
+            showToast('Installing dependencies... Please wait (first start only)', 'info');
+        } else {
+            showToast('Starting bot...', 'info');
+        }
+        
         const result = await invoke('start_bot');
-        showToast('Bot started!', 'success');
+        showToast('Bot started successfully!', 'success');
         await updateBotStatus();
         await updateHostingStats();
         setTimeout(loadDashboard, 2000);
     } catch (e) {
-        // Check if it's a missing dependencies error
-        if (e.includes && (e.includes('Cannot find module') || e.includes('MODULE_NOT_FOUND'))) {
-            showToast('Installing missing dependencies...', 'info');
-            const installed = await installBotDependencies();
-            if (installed) {
-                // Try starting again
-                setTimeout(startBot, 1000);
-            }
+        const errorMsg = String(e);
+        
+        if (errorMsg.includes('npm install') || errorMsg.includes('Node.js')) {
+            showToast('Node.js is required! Please install from nodejs.org', 'error');
+            window.open('https://nodejs.org', '_blank');
+        } else if (errorMsg.includes('Token')) {
+            showToast('Please configure your Bot Token first!', 'error');
+            showPage('config');
+        } else if (errorMsg.includes('reinstall')) {
+            showToast('Bot files missing. Please reinstall the application.', 'error');
         } else {
             showToast('Error: ' + e, 'error');
         }
