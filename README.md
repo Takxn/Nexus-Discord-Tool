@@ -18,7 +18,7 @@
 | **Lifetime Key** | **€2.50** | Full access forever, all features, all updates |
 
 > Purchase your key at [discord.gg/nexus-plus](https://discord.gg/nexus-plus)
-
+or in the app...
 ---
 
 ## Features
