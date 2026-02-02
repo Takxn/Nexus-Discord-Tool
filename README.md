@@ -101,6 +101,7 @@
 | `/ticket` | Ticket system |
 | `/embed` | Create embed |
 
+And more...
 ---
 
 ## Support
