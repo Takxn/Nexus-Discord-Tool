@@ -1,7 +1,7 @@
 # Nexus Discord Tool
 
 <p align="center">
-  <img src="logo.png" alt="Nexus Logo" width="150">
+  <img width="712" height="712" alt="logo" src="https://github.com/user-attachments/assets/6ee2b5a7-c84d-41fe-9597-cb97ca24952c" />
 </p>
 
 <p align="center">
